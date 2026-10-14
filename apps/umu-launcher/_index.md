@@ -32,7 +32,7 @@ start_virtual_compositor = true
 [apps.runner]
 type = "docker"
 name = "WolfMyWindowsApp"
-image = "ghcr.io/games-on-whales/umu-launcher:edge"
+image = "ghcr.io/rohja/umu-launcher:edge"
 mounts = [
     "/mnt/games/MyApp:/app:rw",
     "umu-launcher:/var/umu:rw",

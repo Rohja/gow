@@ -6,7 +6,7 @@ start_virtual_compositor = true
 [apps.runner]
 type = "docker"
 name = "WolfUmuLauncher"
-image = "ghcr.io/games-on-whales/umu-launcher:edge"
+image = "ghcr.io/rohja/umu-launcher:edge"
 # 1st: host folder containing the Windows application  -> /app
 # 2nd: named volume storing Proton, the runtime and the wine prefix (kept between runs)
 mounts = [
