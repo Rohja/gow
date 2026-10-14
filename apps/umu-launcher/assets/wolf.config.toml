@@ -1,0 +1,45 @@
+[[apps]]
+title = "umu-launcher"
+icon_png_path = "https://games-on-whales.github.io/wildlife/apps/umu-launcher/assets/icon.png"
+start_virtual_compositor = true
+
+[apps.runner]
+type = "docker"
+name = "WolfUmuLauncher"
+image = "ghcr.io/games-on-whales/umu-launcher:edge"
+# 1st: host folder containing the Windows application  -> /app
+# 2nd: named volume storing Proton, the runtime and the wine prefix (kept between runs)
+mounts = [
+    "/PATH/TO/YOUR/WINDOWS/APP:/app:rw",
+    "umu-launcher:/var/umu:rw",
+]
+env = [
+    # Proton to use: "GE-Proton" (latest, auto-downloaded on first run),
+    # a specific release such as "GE-Proton10-4", "UMU-Latest", or an absolute path
+    "UMU_PROTON_VERSION=GE-Proton",
+    # Name (or path relative to /app) of the .exe to run
+    "UMU_APP_EXE=MyApp.exe",
+    # Optional arguments passed to the .exe (split on spaces)
+    "UMU_APP_ARGS=",
+    # Optional: umu game id (use umu-<steam appid> to apply protonfixes)
+    # "UMU_GAME_ID=umu-default",
+    # Optional: working directory relative to /app (default: the exe's folder)
+    # "UMU_APP_WORKDIR=",
+    "RUN_GAMESCOPE=1",
+    "GOW_REQUIRED_DEVICES=/dev/input/* /dev/dri/* /dev/nvidia*",
+]
+devices = []
+ports = []
+base_create_json = """
+{
+  "HostConfig": {
+    "IpcMode": "host",
+    "CapAdd": ["SYS_ADMIN", "SYS_NICE", "SYS_PTRACE", "NET_RAW", "MKNOD", "NET_ADMIN"],
+    "SecurityOpt": ["seccomp=unconfined", "apparmor=unconfined"],
+    "Ulimits": [{"Name":"nofile", "Hard":524288, "Soft":524288}],
+    "Privileged": false,
+    "DeviceCgroupRules": ["c 13:* rmw", "c 244:* rmw"]
+  }
+}
+\
+"""

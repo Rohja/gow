@@ -84,6 +84,7 @@ jobs:
           - { name: firefox,               docker_path: apps,   platforms: "linux/amd64" }
           - { name: steam,                 docker_path: apps,   platforms: "linux/amd64" }
           - { name: lutris,                docker_path: apps,   platforms: "linux/amd64" }
+          - { name: umu-launcher,          docker_path: apps,   platforms: "linux/amd64" }
           - { name: heroic-games-launcher, docker_path: apps,   platforms: "linux/amd64" }
           - { name: prismlauncher,         docker_path: apps,   platforms: "linux/amd64" }
           - { name: kodi,                  docker_path: apps,   platforms: "linux/amd64" }
@@ -162,6 +163,7 @@ jobs:
           - { name: firefox,               docker_path: apps,   platforms: "linux/amd64" }
           - { name: steam,                 docker_path: apps,   platforms: "linux/amd64" }
           - { name: lutris,                docker_path: apps,   platforms: "linux/amd64" }
+          - { name: umu-launcher,          docker_path: apps,   platforms: "linux/amd64" }
           - { name: heroic-games-launcher, docker_path: apps,   platforms: "linux/amd64" }
           - { name: prismlauncher,         docker_path: apps,   platforms: "linux/amd64" }
           - { name: kodi,                  docker_path: apps,   platforms: "linux/amd64" }
