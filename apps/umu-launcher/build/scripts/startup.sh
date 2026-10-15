@@ -39,15 +39,28 @@ install_ge_proton() {
     fi
     if [ ! -d "${PROTON_DIR}/${tag}" ]; then
         gow_log "Downloading ${tag} to ${PROTON_DIR} (first run only)..."
-        local tmp
+        local tmp ext url ok=0
         tmp="$(mktemp -d)"
-        if ! curl -fSL -o "${tmp}/${tag}.tar.gz" "${PROTON_REPO}/download/${tag}/${tag}.tar.gz" ||
-           ! tar -xzf "${tmp}/${tag}.tar.gz" -C "${PROTON_DIR}"; then
-            rm -rf "${tmp}" "${PROTON_DIR}/${tag}"
+        # Release assets have been published as .tar.gz and as .tar.zst
+        for ext in tar.zst tar.gz; do
+            url="${PROTON_REPO}/download/${tag}/${tag}.${ext}"
+            if curl -fSL -o "${tmp}/proton.${ext}" "${url}"; then
+                if [ "${ext}" = "tar.zst" ]; then
+                    zstd -dc "${tmp}/proton.${ext}" | tar -x -C "${PROTON_DIR}" && ok=1
+                else
+                    tar -xzf "${tmp}/proton.${ext}" -C "${PROTON_DIR}" && ok=1
+                fi
+                [ "${ok}" = 1 ] && break
+            else
+                gow_log "  not available: ${url}"
+            fi
+        done
+        rm -rf "${tmp}"
+        if [ "${ok}" != 1 ] || [ ! -d "${PROTON_DIR}/${tag}" ]; then
+            rm -rf "${PROTON_DIR}/${tag}"
             gow_log "WARNING: failed to download ${tag}"
             return 1
         fi
-        rm -rf "${tmp}"
     fi
     PROTON_VERSION="${PROTON_DIR}/${tag}"
 }
