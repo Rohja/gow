@@ -22,9 +22,42 @@ mkdir -p "${UMU_STATE}"/{proton,prefix,umu-data} "$HOME/.local/share/Steam"
 ln -sfn "${UMU_STATE}/umu-data" "$HOME/.local/share/umu"
 ln -sfn "${UMU_STATE}/proton" "$HOME/.local/share/Steam/compatibilitytools.d"
 
+# --- Proton -----------------------------------------------------------------
+# umu resolves names like "GE-Proton" through api.github.com, which is often
+# rate-limited or blocked. Download GE-Proton ourselves from the plain github.com
+# release URLs instead, and hand umu a local path. The result is cached in the volume.
+PROTON_DIR="${UMU_STATE}/proton"
+PROTON_REPO="https://github.com/GloriousEggroll/proton-ge-custom/releases"
+PROTON_VERSION="${UMU_PROTON_VERSION:-GE-Proton}"
+
+install_ge_proton() {
+    local tag="$1"
+    if [ "${tag}" = "GE-Proton" ]; then
+        # /releases/latest redirects to /releases/tag/<tag>: no API call needed
+        tag="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "${PROTON_REPO}/latest" | sed 's#.*/##')"
+        [ -n "${tag}" ] || { gow_log "WARNING: could not resolve latest GE-Proton"; return 1; }
+    fi
+    if [ ! -d "${PROTON_DIR}/${tag}" ]; then
+        gow_log "Downloading ${tag} to ${PROTON_DIR} (first run only)..."
+        local tmp
+        tmp="$(mktemp -d)"
+        if ! curl -fSL -o "${tmp}/${tag}.tar.gz" "${PROTON_REPO}/download/${tag}/${tag}.tar.gz" ||
+           ! tar -xzf "${tmp}/${tag}.tar.gz" -C "${PROTON_DIR}"; then
+            rm -rf "${tmp}" "${PROTON_DIR}/${tag}"
+            gow_log "WARNING: failed to download ${tag}"
+            return 1
+        fi
+        rm -rf "${tmp}"
+    fi
+    PROTON_VERSION="${PROTON_DIR}/${tag}"
+}
+
+case "${PROTON_VERSION}" in
+    GE-Proton*) install_ge_proton "${PROTON_VERSION}" || gow_log "Falling back to umu's own Proton lookup" ;;
+esac
+
 # --- umu-launcher environment ----------------------------------------------
-# GE-Proton (latest) is downloaded automatically on first run and cached in the volume.
-export PROTONPATH="${UMU_PROTON_VERSION:-GE-Proton}"
+export PROTONPATH="${PROTON_VERSION}"
 export WINEPREFIX="${UMU_STATE}/prefix"
 export GAMEID="${UMU_GAME_ID:-umu-default}"
 export STORE="${STORE:-none}"

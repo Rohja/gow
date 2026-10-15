@@ -18,7 +18,7 @@ Everything is configured from the app entry in Wolf's `config.toml`:
 | `UMU_APP_WORKDIR` | env, optional | Working directory relative to `/app` (default: the exe's folder) |
 | `RUN_GAMESCOPE` / `RUN_SWAY` | env | Compositor used; gamescope by default |
 
-On the first launch the requested Proton version and the Steam Linux Runtime are downloaded
+`GE-Proton*` versions are downloaded directly from github.com releases (not the rate-limited GitHub API). On the first launch the requested Proton version and the Steam Linux Runtime are downloaded
 automatically into the `umu-launcher` volume, so the container needs internet access and the
 first start may take a while. Later launches reuse them.
 
