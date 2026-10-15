@@ -5,13 +5,13 @@ source /opt/gow/bash-lib/utils.sh
 
 # --- Validate configuration -------------------------------------------------
 if [ -z "${UMU_APP_EXE:-}" ]; then
-    gow_log "ERROR: UMU_APP_EXE is not set (name of the .exe to run, relative to /app)"
+    gow_log "ERROR: UMU_APP_EXE is not set (name of the .exe to run, relative to /game)"
     exit 1
 fi
 
-APP_DIR=/app
+APP_DIR=/game
 if [ ! -f "${APP_DIR}/${UMU_APP_EXE}" ]; then
-    gow_log "ERROR: '${APP_DIR}/${UMU_APP_EXE}' not found. Is the host folder mounted on /app? Contents of ${APP_DIR}:"
+    gow_log "ERROR: '${APP_DIR}/${UMU_APP_EXE}' not found. Is the host folder mounted on /game? Contents of ${APP_DIR}:"
     ls -la "${APP_DIR}" 2>&1 | while read -r l; do gow_log "  $l"; done
     exit 1
 fi

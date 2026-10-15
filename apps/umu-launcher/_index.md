@@ -9,18 +9,21 @@ Everything is configured from the app entry in Wolf's `config.toml`:
 
 | What | Where | Description |
 |------|-------|-------------|
-| Windows app folder | `mounts`: `/host/path:/app:rw` | Host folder containing the application, mounted on `/app` |
+| Windows app folder | `mounts`: `/host/path:/game:rw` | Host folder containing the application, mounted on `/game` |
 | Proton + prefix storage | `mounts`: `umu-launcher:/var/umu:rw` | Volume holding Proton, the Steam Linux Runtime and the wine prefix; kept between runs |
-| `UMU_APP_EXE` | env (**required**) | `.exe` to run, relative to `/app` (e.g. `Setup.exe` or `bin/App.exe`) |
+| `UMU_APP_EXE` | env (**required**) | `.exe` to run, relative to `/game` (e.g. `Setup.exe` or `bin/App.exe`) |
 | `UMU_PROTON_VERSION` | env, default `GE-Proton` | `GE-Proton` (latest GE-Proton), a release such as `GE-Proton10-4`, `UMU-Latest`, or an absolute path to a Proton folder |
 | `UMU_APP_ARGS` | env, optional | Arguments passed to the `.exe`, split on spaces |
 | `UMU_GAME_ID` | env, default `umu-default` | umu game id; use `umu-<steam appid>` to apply [protonfixes](https://github.com/Open-Wine-Components/umu-protonfixes) |
-| `UMU_APP_WORKDIR` | env, optional | Working directory relative to `/app` (default: the exe's folder) |
+| `UMU_APP_WORKDIR` | env, optional | Working directory relative to `/game` (default: the exe's folder) |
 | `RUN_GAMESCOPE` / `RUN_SWAY` | env | Compositor used; gamescope by default |
 
 `GE-Proton*` versions are downloaded directly from github.com releases (not the rate-limited GitHub API), using the archive for the container architecture. Only the requested (or latest) version is tried; if its download fails the container exits with an error. On the first launch the requested Proton version and the Steam Linux Runtime are downloaded
 automatically into the `umu-launcher` volume, so the container needs internet access and the
 first start may take a while. Later launches reuse them.
+
+> **Why `/game`?** The game folder must not be mounted on `/app`: the Steam Linux Runtime
+> (pressure-vessel) reserves that path and the game would not be visible inside it.
 
 ## Example
 
@@ -34,7 +37,7 @@ type = "docker"
 name = "WolfMyWindowsApp"
 image = "ghcr.io/rohja/umu-launcher:edge"
 mounts = [
-    "/mnt/games/MyApp:/app:rw",
+    "/mnt/games/MyApp:/game:rw",
     "umu-launcher:/var/umu:rw",
 ]
 env = [

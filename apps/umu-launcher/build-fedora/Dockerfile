@@ -61,7 +61,7 @@ _INSTALL_UMU
 
 COPY --from=bwrap-builder --chmod=755 /root/bubblewrap/_builddir/bwrap /usr/bin/bwrap
 
-RUN mkdir -pm 777 /var/umu /app
+RUN mkdir -pm 777 /var/umu /game
 
 COPY --chmod=777 scripts/startup.sh /opt/gow/startup-app.sh
 
