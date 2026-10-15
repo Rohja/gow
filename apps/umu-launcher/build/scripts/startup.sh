@@ -30,39 +30,54 @@ PROTON_DIR="${UMU_STATE}/proton"
 PROTON_REPO="https://github.com/GloriousEggroll/proton-ge-custom/releases"
 PROTON_VERSION="${UMU_PROTON_VERSION:-GE-Proton}"
 
-install_ge_proton() {
-    local tag="$1"
-    if [ "${tag}" = "GE-Proton" ]; then
-        # /releases/latest redirects to /releases/tag/<tag>: no API call needed
-        tag="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "${PROTON_REPO}/latest" | sed 's#.*/##')"
-        [ -n "${tag}" ] || { gow_log "WARNING: could not resolve latest GE-Proton"; return 1; }
-    fi
-    if [ ! -d "${PROTON_DIR}/${tag}" ]; then
-        gow_log "Downloading ${tag} to ${PROTON_DIR} (first run only)..."
-        local tmp ext url ok=0
-        tmp="$(mktemp -d)"
-        # Release assets have been published as .tar.gz and as .tar.zst
-        for ext in tar.zst tar.gz; do
-            url="${PROTON_REPO}/download/${tag}/${tag}.${ext}"
-            if curl -fSL -o "${tmp}/proton.${ext}" "${url}"; then
-                if [ "${ext}" = "tar.zst" ]; then
-                    zstd -dc "${tmp}/proton.${ext}" | tar -x -C "${PROTON_DIR}" && ok=1
-                else
-                    tar -xzf "${tmp}/proton.${ext}" -C "${PROTON_DIR}" && ok=1
-                fi
-                [ "${ok}" = 1 ] && break
-            else
-                gow_log "  not available: ${url}"
-            fi
-        done
-        rm -rf "${tmp}"
-        if [ "${ok}" != 1 ] || [ ! -d "${PROTON_DIR}/${tag}" ]; then
-            rm -rf "${PROTON_DIR}/${tag}"
-            gow_log "WARNING: failed to download ${tag}"
-            return 1
+# Download and extract one release tag. Asset names are read from the release page
+# (plain HTML, no API) because they vary between releases (.tar.gz / .tar.zst).
+download_ge_proton_tag() {
+    local tag="$1" tmp url urls ok=1
+    [ -d "${PROTON_DIR}/${tag}" ] && return 0
+    urls="$(curl -fsSL "${PROTON_REPO}/expanded_assets/${tag}" 2>/dev/null |
+            grep -oE "/GloriousEggroll/proton-ge-custom/releases/download/[^\"]+\.tar\.(zst|gz)" |
+            sed 's#^#https://github.com#' | sort -u || true)"
+    # Fallback: the conventional names
+    urls="${urls:-${PROTON_REPO}/download/${tag}/${tag}.tar.gz ${PROTON_REPO}/download/${tag}/${tag}.tar.zst}"
+    gow_log "Downloading ${tag} to ${PROTON_DIR} (first run only)..."
+    tmp="$(mktemp -d)"
+    for url in ${urls}; do
+        gow_log "  trying ${url}"
+        if curl -fSL -o "${tmp}/proton.tar" "${url}"; then
+            case "${url}" in
+                *.zst) zstd -dc "${tmp}/proton.tar" | tar -x -C "${PROTON_DIR}" ;;
+                *)     tar -xzf "${tmp}/proton.tar" -C "${PROTON_DIR}" ;;
+            esac && [ -d "${PROTON_DIR}/${tag}" ] && { ok=0; break; }
         fi
+    done
+    rm -rf "${tmp}"
+    [ "${ok}" = 0 ] || rm -rf "${PROTON_DIR}/${tag}"
+    return "${ok}"
+}
+
+install_ge_proton() {
+    local wanted="$1" tags tag
+    if [ "${wanted}" = "GE-Proton" ]; then
+        # No API: the "latest" redirect, then the releases feed for older candidates
+        tags="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "${PROTON_REPO}/latest" | sed 's#.*/##')"
+        tags="${tags} $(curl -fsSL "${PROTON_REPO}.atom" 2>/dev/null |
+                        grep -oE '/releases/tag/GE-Proton[^"<]+' | sed 's#.*/##' | head -n 5 || true)"
+        gow_log "GE-Proton release candidates: ${tags}"
+    else
+        tags="${wanted}"
     fi
-    PROTON_VERSION="${PROTON_DIR}/${tag}"
+    local seen=" "
+    for tag in ${tags}; do
+        case "${seen}" in *" ${tag} "*) continue ;; esac
+        seen="${seen}${tag} "
+        if download_ge_proton_tag "${tag}"; then
+            PROTON_VERSION="${PROTON_DIR}/${tag}"
+            return 0
+        fi
+        gow_log "WARNING: no usable download for ${tag}"
+    done
+    return 1
 }
 
 case "${PROTON_VERSION}" in
