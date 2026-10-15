@@ -21,8 +21,9 @@ RUN dnf install -y git meson ca-certificates dpkg-dev && \
 # hadolint ignore=DL3006
 FROM ${BASE_APP_IMAGE}
 
-# Pinned to avoid stale layer caches when a new release comes out
-ARG UMU_VERSION=1.2.9
+# "latest" is resolved at build time (the CI passes the resolved tag so the layer cache
+# is invalidated on new releases). Proton builds can require a newer umu runtime table.
+ARG UMU_VERSION=latest
 
 # umu-launcher is not available in the Fedora repos: use the upstream zipapp release
 RUN <<_INSTALL_UMU
@@ -42,6 +43,12 @@ dnf install -y \
     zstd
 dnf clean all
 
+if [ "${UMU_VERSION}" = "latest" ]; then
+    UMU_VERSION="$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+        https://github.com/Open-Wine-Components/umu-launcher/releases/latest | sed 's#.*/##')"
+fi
+[ -n "${UMU_VERSION}" ] && [ "${UMU_VERSION}" != "latest" ] || { echo "cannot resolve umu-launcher version" >&2; exit 1; }
+echo "Installing umu-launcher ${UMU_VERSION}"
 mkdir -p /opt/umu /tmp/umu
 curl -fsSL -o /tmp/umu/umu.tar \
     "https://github.com/Open-Wine-Components/umu-launcher/releases/download/${UMU_VERSION}/umu-launcher-${UMU_VERSION}-zipapp.tar"
