@@ -116,6 +116,10 @@ export WINEPREFIX="${UMU_STATE}/prefix"
 export GAMEID="${UMU_GAME_ID:-umu-default}"
 export STORE="${STORE:-none}"
 
+# umu-shim and the Proton/runtime folders are reached through symlinks into the state
+# volume; share it with the pressure-vessel container or they dangle inside it.
+export PRESSURE_VESSEL_FILESYSTEMS_RW="${UMU_STATE}${PRESSURE_VESSEL_FILESYSTEMS_RW:+:${PRESSURE_VESSEL_FILESYSTEMS_RW}}"
+
 # Optional arguments, split on whitespace
 ARGS=()
 if [ -n "${UMU_APP_ARGS:-}" ]; then
