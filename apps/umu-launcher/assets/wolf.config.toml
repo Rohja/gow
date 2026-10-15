@@ -25,6 +25,10 @@ env = [
     # "UMU_GAME_ID=umu-default",
     # Optional: working directory relative to /game (default: the exe's folder)
     # "UMU_APP_WORKDIR=",
+    # Debugging: keep the container alive after exit, verbose logs (see the docs page)
+    # "UMU_DEBUG_HOLD=600",
+    # "UMU_LOG=debug",
+    # "PROTON_LOG=1",
     "RUN_GAMESCOPE=1",
     "GOW_REQUIRED_DEVICES=/dev/input/* /dev/dri/* /dev/nvidia*",
 ]

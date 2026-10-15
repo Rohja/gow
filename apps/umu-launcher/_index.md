@@ -17,6 +17,7 @@ Everything is configured from the app entry in Wolf's `config.toml`:
 | `UMU_GAME_ID` | env, default `umu-default` | umu game id; use `umu-<steam appid>` to apply [protonfixes](https://github.com/Open-Wine-Components/umu-protonfixes) |
 | `UMU_APP_WORKDIR` | env, optional | Working directory relative to `/game` (default: the exe's folder) |
 | `RUN_GAMESCOPE` / `RUN_SWAY` | env | Compositor used; gamescope by default |
+| `UMU_DEBUG_HOLD` | env, optional | Seconds to keep the container alive after the app exits (see Debugging) |
 
 `GE-Proton*` versions are downloaded directly from github.com releases (not the rate-limited GitHub API), using the archive for the container architecture. Only the requested (or latest) version is tried; if its download fails the container exits with an error. On the first launch the requested Proton version and the Steam Linux Runtime are downloaded
 automatically into the `umu-launcher` volume, so the container needs internet access and the
@@ -52,4 +53,20 @@ env = [
 
 Add another `[[apps]]` entry per application; they can share the same `umu-launcher` volume
 (Proton is downloaded once) or use separate volumes for separate wine prefixes.
-Set `PROTON_LOG=1` in `env` to get a Proton log (written to `$HOME/steam-umu-default.log`).
+
+## Debugging
+
+Wolf removes a container as soon as it exits, so everything the container prints is also saved in the
+`umu-launcher` volume:
+
+```sh
+docker run --rm -v umu-launcher:/v alpine cat /v/logs/last-run.log      # last launch
+docker run --rm -v umu-launcher:/v alpine cat /v/logs/previous-run.log  # the one before
+```
+
+Useful env variables while troubleshooting:
+
+- `UMU_DEBUG_HOLD=600`: keep the container alive for 10 minutes after the app exits, so you can
+  `docker logs` / `docker exec -it <container> bash` into it.
+- `UMU_LOG=debug`: verbose umu-launcher output.
+- `PROTON_LOG=1`: Proton log, written to `/var/umu/logs/steam-<gameid>.log` in the volume.

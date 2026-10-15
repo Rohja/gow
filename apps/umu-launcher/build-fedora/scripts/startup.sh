@@ -3,6 +3,31 @@ set -e
 
 source /opt/gow/bash-lib/utils.sh
 
+# --- Persistent storage (Proton, runtime, wine prefix, logs) ----------------
+UMU_STATE=/var/umu
+mkdir -p "${UMU_STATE}"/{proton,prefix,umu-data,logs} "$HOME/.local/share/Steam"
+ln -sfn "${UMU_STATE}/umu-data" "$HOME/.local/share/umu"
+ln -sfn "${UMU_STATE}/proton" "$HOME/.local/share/Steam/compatibilitytools.d"
+
+# --- Logs that survive the container (Wolf removes it as soon as it exits) ---
+# Everything printed below also goes to `docker logs`.
+LOG_DIR="${UMU_STATE}/logs"
+[ -f "${LOG_DIR}/last-run.log" ] && mv -f "${LOG_DIR}/last-run.log" "${LOG_DIR}/previous-run.log"
+exec > >(tee "${LOG_DIR}/last-run.log") 2>&1
+[ -z "${PROTON_LOG:-}" ] || export PROTON_LOG_DIR="${LOG_DIR}"
+
+# UMU_DEBUG_HOLD=<seconds>: keep the container alive after exit to inspect it
+on_exit() {
+    local rc=$?
+    gow_log "startup script exiting with code ${rc}"
+    if [ -n "${UMU_DEBUG_HOLD:-}" ]; then
+        gow_log "UMU_DEBUG_HOLD: keeping the container alive for ${UMU_DEBUG_HOLD}s"
+        sleep "${UMU_DEBUG_HOLD}"
+    fi
+    sleep 0.5 # let tee flush
+}
+trap on_exit EXIT
+
 # --- Validate configuration -------------------------------------------------
 if [ -z "${UMU_APP_EXE:-}" ]; then
     gow_log "ERROR: UMU_APP_EXE is not set (name of the .exe to run, relative to /game)"
@@ -15,12 +40,6 @@ if [ ! -f "${APP_DIR}/${UMU_APP_EXE}" ]; then
     ls -la "${APP_DIR}" 2>&1 | while read -r l; do gow_log "  $l"; done
     exit 1
 fi
-
-# --- Persistent storage (Proton, runtime, wine prefix) ----------------------
-UMU_STATE=/var/umu
-mkdir -p "${UMU_STATE}"/{proton,prefix,umu-data} "$HOME/.local/share/Steam"
-ln -sfn "${UMU_STATE}/umu-data" "$HOME/.local/share/umu"
-ln -sfn "${UMU_STATE}/proton" "$HOME/.local/share/Steam/compatibilitytools.d"
 
 # --- Proton -----------------------------------------------------------------
 # umu resolves names like "GE-Proton" through api.github.com, which is often
