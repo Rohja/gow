@@ -33,9 +33,10 @@ function launcher() {
     echo "output * resolution ${GAMESCOPE_WIDTH}x${GAMESCOPE_HEIGHT} position 0,0" >> $HOME/.config/sway/config
     echo -n "workspace main; exec $@" >> $HOME/.config/sway/config
 
-    # if SWAY_STOP_ON_APP_EXIT == "yes" then kill sway when the app exits
+    # if SWAY_STOP_ON_APP_EXIT == "yes" then kill sway when the app exits, whatever its exit code
+    # (`|| true` because a non-zero exit would skip `&& killall`; no `;` as sway would parse it)
     if [ "$SWAY_STOP_ON_APP_EXIT" == "yes" ]; then
-      echo -n " && killall sway" >> $HOME/.config/sway/config
+      echo -n " || true && killall sway" >> $HOME/.config/sway/config
     fi
 
     # Start sway
