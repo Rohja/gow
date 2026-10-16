@@ -136,4 +136,18 @@ source /opt/gow/launch-comp.sh
 [ -z "$RUN_GAMESCOPE" ] && [ -z "$RUN_SWAY" ] && export RUN_GAMESCOPE=1
 
 gow_log "Launching ${UMU_APP_EXE} with PROTONPATH=${PROTONPATH} GAMEID=${GAMEID}"
-launcher umu-run "${APP_DIR}/${UMU_APP_EXE}" "${ARGS[@]}"
+
+# Sway only stops when the command it runs succeeds (`<cmd> && killall sway`), but Windows
+# apps often exit non-zero (cancel, error): run umu-run through a wrapper that always exits 0
+# so the session (and the stream) ends whenever the app does. The real code is logged.
+APP_WRAPPER=/tmp/umu-app-wrapper.sh
+cat > "${APP_WRAPPER}" <<'_WRAPPER'
+#!/bin/bash
+umu-run "$@"
+rc=$?
+echo "[umu-launcher] application exited with code ${rc}"
+exit 0
+_WRAPPER
+chmod +x "${APP_WRAPPER}"
+
+launcher "${APP_WRAPPER}" "${APP_DIR}/${UMU_APP_EXE}" "${ARGS[@]}"
