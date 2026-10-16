@@ -2,7 +2,7 @@ name: umu-launcher
 
 on:
   push:
-    branches: [master, claude/bold-einstein-sswx3m]
+    branches: [master, claude/nice-bardeen-dbqglo]
     paths:
       - "apps/umu-launcher/**"
       - ".github/workflows/umu-launcher.yml"
