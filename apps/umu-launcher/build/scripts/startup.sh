@@ -48,8 +48,10 @@ link_game_from_ro() {
     fi
 
     gow_log "Symlinking ${APP_DIR_RO} into ${APP_DIR}"
-    # --no-clobber keeps what is already in /game (earlier links, copies, saves); it may make cp exit non-zero
-    cp -as --no-clobber "${APP_DIR_RO}/." "${APP_DIR}/" || true
+    # --update=none keeps what is already in /game (earlier links, copies, saves)
+    cp -Rs --no-preserve=all --update=none "${APP_DIR_RO}/." "${APP_DIR}/"
+    # The links point into /game_ro: share it with the pressure-vessel container or they dangle inside it
+    export PRESSURE_VESSEL_FILESYSTEMS_RW="${APP_DIR_RO}${PRESSURE_VESSEL_FILESYSTEMS_RW:+:${PRESSURE_VESSEL_FILESYSTEMS_RW}}"
 
     local -a entries
     IFS=, read -ra entries <<< "${UMU_COPY_INSTEAD_OF_SYMLINK:-}"
