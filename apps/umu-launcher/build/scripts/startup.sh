@@ -35,6 +35,51 @@ if [ -z "${UMU_APP_EXE:-}" ]; then
 fi
 
 APP_DIR=/game
+APP_DIR_RO=/game_ro
+
+# UMU_SYMLINK_GAME_FROM_RO=True: rebuild the game folder from a read-only copy. Directories are
+# created for real and files are symlinked, so the game can still write anywhere in /game.
+# UMU_COPY_INSTEAD_OF_SYMLINK: comma separated paths (relative to the game folder) copied instead.
+link_game_from_ro() {
+    local entry
+    if [ ! -d "${APP_DIR_RO}" ]; then
+        gow_log "ERROR: UMU_SYMLINK_GAME_FROM_RO is set but ${APP_DIR_RO} is not mounted"
+        return 1
+    fi
+
+    gow_log "Symlinking ${APP_DIR_RO} into ${APP_DIR}"
+    # --update=none keeps what is already in /game (earlier links, copies, saves)
+    cp -Rs --no-preserve=all --update=none "${APP_DIR_RO}/." "${APP_DIR}/"
+    # The links point into /game_ro: share it with the pressure-vessel container or they dangle inside it
+    export PRESSURE_VESSEL_FILESYSTEMS_RW="${APP_DIR_RO}${PRESSURE_VESSEL_FILESYSTEMS_RW:+:${PRESSURE_VESSEL_FILESYSTEMS_RW}}"
+
+    local -a entries
+    IFS=, read -ra entries <<< "${UMU_COPY_INSTEAD_OF_SYMLINK:-}"
+    for entry in "${entries[@]}"; do
+        entry="${entry#"${entry%%[![:space:]]*}"}"   # trim
+        entry="${entry%"${entry##*[![:space:]]}"}"
+        [ -n "${entry}" ] || continue
+        case "/${entry}/" in
+            //*|*/../*) gow_log "WARNING: ignoring '${entry}' in UMU_COPY_INSTEAD_OF_SYMLINK (must be relative, without '..')"; continue ;;
+        esac
+        if [ ! -e "${APP_DIR_RO}/${entry}" ]; then
+            gow_log "WARNING: '${entry}' (UMU_COPY_INSTEAD_OF_SYMLINK) not found in ${APP_DIR_RO}"
+            continue
+        fi
+        # Already a real copy from a previous run: keep the game's modifications
+        if [ -e "${APP_DIR}/${entry}" ] && [ ! -L "${APP_DIR}/${entry}" ] && [ ! -d "${APP_DIR_RO}/${entry}" ]; then
+            continue
+        fi
+        gow_log "Copying ${entry} instead of symlinking it"
+        mkdir -p "$(dirname "${APP_DIR}/${entry}")"
+        cp -aT --remove-destination "${APP_DIR_RO}/${entry}" "${APP_DIR}/${entry}"
+    done
+}
+
+case "${UMU_SYMLINK_GAME_FROM_RO,,}" in
+    true|1|yes) link_game_from_ro || exit 1 ;;
+esac
+
 if [ ! -f "${APP_DIR}/${UMU_APP_EXE}" ]; then
     gow_log "ERROR: '${APP_DIR}/${UMU_APP_EXE}' not found. Is the host folder mounted on /game? Contents of ${APP_DIR}:"
     ls -la "${APP_DIR}" 2>&1 | while read -r l; do gow_log "  $l"; done

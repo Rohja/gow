@@ -16,6 +16,8 @@ Everything is configured from the app entry in Wolf's `config.toml`:
 | `UMU_APP_ARGS` | env, optional | Arguments passed to the `.exe`, split on spaces |
 | `UMU_GAME_ID` | env, default `umu-default` | umu game id; use `umu-<steam appid>` to apply [protonfixes](https://github.com/Open-Wine-Components/umu-protonfixes) |
 | `UMU_APP_WORKDIR` | env, optional | Working directory relative to `/game` (default: the exe's folder) |
+| `UMU_SYMLINK_GAME_FROM_RO` | env, optional | When `True`, before launching, the content of `/game_ro` is symlinked into `/game` (folders are created, files are symlinked). Mount the pristine install read-only on `/game_ro`; `/game` is the container's writable folder (mount a volume on it to keep changes). `/game_ro` is shared with the Proton runtime automatically |
+| `UMU_COPY_INSTEAD_OF_SYMLINK` | env, optional | Comma separated paths (relative to the game folder, e.g. `bin/settings.ini,saves`) copied from `/game_ro` instead of symlinked, for files the game must modify or create at runtime (ini files, logs, `steam_appid.txt`...), since symlinks point at a read-only mount. Existing copies are kept between launches |
 | `RUN_GAMESCOPE` / `RUN_SWAY` | env | Compositor used; gamescope by default |
 | `UMU_DEBUG_HOLD` | env, optional | Seconds to keep the container alive after the app exits (see Debugging) |
 
