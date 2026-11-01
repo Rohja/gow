@@ -188,11 +188,15 @@ gow_log "Launching ${UMU_APP_EXE} with PROTONPATH=${PROTONPATH} GAMEID=${GAMEID}
 APP_WRAPPER=/tmp/umu-app-wrapper.sh
 cat > "${APP_WRAPPER}" <<'_WRAPPER'
 #!/bin/bash
-umu-run "$@"
+# The exe path and args come from the environment, not the command line: the sway launcher
+# re-parses its command line (exec $@), which would split paths containing spaces.
+read -ra _args <<< "${UMU_APP_ARGS:-}"
+umu-run "${UMU_APP_PATH}" "${_args[@]}"
 rc=$?
 echo "[umu-launcher] application exited with code ${rc}"
 exit 0
 _WRAPPER
 chmod +x "${APP_WRAPPER}"
 
-launcher "${APP_WRAPPER}" "${APP_DIR}/${UMU_APP_EXE}" "${ARGS[@]}"
+export UMU_APP_PATH="${APP_DIR}/${UMU_APP_EXE}"
+launcher "${APP_WRAPPER}"
